@@ -1,0 +1,841 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Aastha Enterprises | Live Housing & Commercial Portal</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet" />
+
+  <!-- Firebase Realtime Database SDKs -->
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
+
+  <style>
+    body { font-family: 'Plus Jakarta Sans', sans-serif; background-color: #080c16; }
+    .glass-card { background: rgba(15, 23, 42, 0.85); backdrop-filter: blur(16px); border: 1px solid rgba(255, 255, 255, 0.08); }
+    .gold-gradient { background: linear-gradient(135deg, #f59e0b 0%, #fbbf24 50%, #d97706 100%); }
+    .custom-scroll::-webkit-scrollbar { width: 6px; }
+    .custom-scroll::-webkit-scrollbar-thumb { background: #334155; border-radius: 99px; }
+  </style>
+</head>
+<body class="text-slate-100 min-h-screen flex flex-col antialiased custom-scroll selection:bg-amber-500 selection:text-slate-950">
+
+  <!-- LIVE DATABASE STATUS BAR -->
+  <div id="cloudStatusBar" class="bg-amber-500/20 text-amber-300 text-xs py-2 px-4 text-center font-bold border-b border-amber-500/30 flex items-center justify-center space-x-2">
+    <span class="w-2 h-2 rounded-full bg-amber-400 animate-ping"></span>
+    <span id="cloudStatusText">Connecting to Aastha Realtime Database...</span>
+  </div>
+
+  <!-- TOP TRUST STRIP -->
+  <div class="bg-slate-950/80 border-b border-slate-800 py-1.5 px-4 text-center text-xs text-slate-400 flex items-center justify-center space-x-4">
+    <span><i class="fa-solid fa-location-dot text-amber-400 mr-1"></i> Barnchal path, Madhuban namghar</span>
+    <span>•</span>
+    <span><i class="fa-brands fa-whatsapp text-emerald-400 mr-1"></i> Helpline: +91 6003523175</span>
+  </div>
+
+  <!-- NAVBAR -->
+  <nav class="sticky top-0 z-40 bg-slate-950/90 backdrop-blur-xl border-b border-slate-800">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
+      <div class="flex items-center space-x-3 cursor-pointer" onclick="showView('home')">
+        <div class="w-11 h-11 rounded-2xl gold-gradient flex items-center justify-center text-slate-950 text-xl font-black shadow-lg">
+          <i class="fa-solid fa-building-circle-check"></i>
+        </div>
+        <div>
+          <span class="text-2xl font-black bg-clip-text text-transparent bg-gradient-to-r from-amber-400 via-amber-200 to-indigo-300">Aastha Enterprises</span>
+          <span class="text-[10px] block text-amber-400 font-bold uppercase">Realtime Housing Portal</span>
+        </div>
+      </div>
+
+      <div class="flex items-center space-x-3">
+        <button onclick="openPostModal(false)" class="gold-gradient hover:brightness-110 text-slate-950 font-black px-4 py-2.5 rounded-xl text-xs uppercase tracking-wider">
+          + List Property
+        </button>
+
+        <div id="navGuest">
+          <button onclick="openModal('authModal')" class="bg-slate-800 hover:bg-slate-700 text-white font-bold px-4 py-2.5 rounded-xl border border-slate-700 text-xs">
+            Sign In / Admin
+          </button>
+        </div>
+
+        <div id="navUser" class="hidden flex items-center space-x-3">
+          <button onclick="showView('dashboard')" class="bg-slate-800 text-white px-3 py-2 rounded-xl text-xs font-bold border border-slate-700">
+            <span id="navUserName">My Space</span>
+          </button>
+          <button id="adminBadge" onclick="showView('admin')" class="hidden bg-red-500/20 text-red-400 border border-red-500/40 px-3 py-2 rounded-xl text-xs font-black uppercase">
+            Admin Room
+          </button>
+          <button onclick="logout()" class="p-2 text-slate-400 hover:text-red-400"><i class="fa-solid fa-power-off"></i></button>
+        </div>
+      </div>
+    </div>
+  </nav>
+
+  <!-- ================= VIEW 1: HOME VIEW ================= -->
+  <main id="homeView" class="flex-grow max-w-7xl mx-auto px-4 py-10 w-full">
+    <!-- Hero Header -->
+    <div class="text-center max-w-3xl mx-auto mb-10">
+      <h1 class="text-3xl sm:text-5xl font-black text-white leading-tight mb-3">
+        Discover Verified Spaces
+      </h1>
+      <p class="text-slate-400 text-sm">Barnchal path, Madhuban namghar | Helpline: +91 6003523175</p>
+
+      <!-- Category Filter Pills -->
+      <div class="flex flex-wrap justify-center gap-2 mt-6">
+        <button onclick="filterCategory('All')" class="cat-pill active px-4 py-2 rounded-xl text-xs font-black bg-amber-500 text-slate-950">All</button>
+        <button onclick="filterCategory('Flat')" class="cat-pill px-4 py-2 rounded-xl text-xs font-bold bg-slate-800 text-slate-300">Flats</button>
+        <button onclick="filterCategory('Commercial')" class="cat-pill px-4 py-2 rounded-xl text-xs font-bold bg-slate-800 text-slate-300">Commercial</button>
+        <button onclick="filterCategory('Villa')" class="cat-pill px-4 py-2 rounded-xl text-xs font-bold bg-slate-800 text-slate-300">Villas</button>
+        <button onclick="filterCategory('Plot')" class="cat-pill px-4 py-2 rounded-xl text-xs font-bold bg-slate-800 text-slate-300">Plots</button>
+      </div>
+    </div>
+
+    <!-- Live Property Grid -->
+    <div id="propertyGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-16"></div>
+
+    <!-- ================= CLIENT REVIEWS SECTION ================= -->
+    <section class="border-t border-slate-800 pt-16 mb-12">
+      <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 gap-4">
+        <div>
+          <span class="text-xs font-black text-amber-400 uppercase tracking-widest">Public Feedback</span>
+          <h2 class="text-2xl sm:text-3xl font-black text-white mt-1">Client Reviews & Ratings</h2>
+        </div>
+        <button onclick="openModal('reviewModal')" class="bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 px-4 py-2.5 rounded-xl text-xs font-bold transition flex items-center space-x-2">
+          <i class="fa-solid fa-pen-to-square"></i>
+          <span>Write a Review</span>
+        </button>
+      </div>
+
+      <!-- Reviews Feed -->
+      <div id="reviewsContainer" class="grid grid-cols-1 md:grid-cols-3 gap-6"></div>
+    </section>
+  </main>
+
+  <!-- ================= VIEW 2: USER DASHBOARD ================= -->
+  <section id="dashboardView" class="hidden max-w-7xl mx-auto px-4 py-10 flex-grow w-full">
+    <div class="flex justify-between items-center mb-6 pb-4 border-b border-slate-800">
+      <div>
+        <h2 class="text-2xl font-black">My Posted Properties</h2>
+        <p class="text-slate-400 text-xs">Manage properties you posted on Aastha Enterprises</p>
+      </div>
+      <button onclick="openPostModal(false)" class="gold-gradient text-slate-950 font-black px-4 py-2 rounded-xl text-xs">+ Post New</button>
+    </div>
+    <div id="userListingsGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"></div>
+  </section>
+
+  <!-- ================= VIEW 3: SUPERADMIN ROOM ================= -->
+  <section id="adminView" class="hidden max-w-7xl mx-auto px-4 py-10 flex-grow w-full">
+    <div class="bg-red-950/40 border border-red-500/30 rounded-3xl p-6 mb-8 flex justify-between items-center flex-wrap gap-4">
+      <div>
+        <span class="px-3 py-1 bg-red-500/20 text-red-400 text-xs font-black rounded-full uppercase">SuperAdmin Control</span>
+        <h2 class="text-2xl font-black mt-2">All Owners' Private Phone Records</h2>
+        <p class="text-slate-400 text-xs mt-0.5">Deleting any item here permanently removes it from the Firebase cloud database.</p>
+      </div>
+      <div class="flex items-center space-x-3">
+        <button onclick="openPostModal(true)" class="gold-gradient text-slate-950 font-black px-4 py-2.5 rounded-xl text-xs uppercase">
+          👑 Post Official Aastha Listing
+        </button>
+        <div class="bg-slate-900 border border-slate-700 px-4 py-2 rounded-xl text-center">
+          <p class="text-[10px] font-bold text-slate-400 uppercase">Live Count</p>
+          <h4 id="adminListingCount" class="text-xl font-black text-amber-400">0</h4>
+        </div>
+      </div>
+    </div>
+
+    <div class="glass-card rounded-2xl overflow-x-auto">
+      <table class="w-full text-left text-xs">
+        <thead class="bg-slate-900 text-slate-400 font-bold uppercase border-b border-slate-800">
+          <tr>
+            <th class="p-4">Property</th>
+            <th class="p-4">Type</th>
+            <th class="p-4">Location</th>
+            <th class="p-4">Price</th>
+            <th class="p-4">Owner Name</th>
+            <th class="p-4 bg-amber-500/10 text-amber-300">Owner Contact (Private)</th>
+            <th class="p-4 text-center">Permanent Delete</th>
+          </tr>
+        </thead>
+        <tbody id="adminTableBody" class="divide-y divide-slate-800"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ================= MODAL: WRITE A REVIEW ================= -->
+  <div id="reviewModal" class="hidden fixed inset-0 z-50 bg-slate-950/85 backdrop-blur-md flex items-center justify-center p-4">
+    <div class="glass-card rounded-3xl max-w-md w-full p-6 relative">
+      <button onclick="closeModal('reviewModal')" class="absolute top-5 right-5 text-slate-400 hover:text-white"><i class="fa-solid fa-xmark"></i></button>
+
+      <h3 class="text-xl font-black text-white mb-1">Leave A Review</h3>
+      <p class="text-slate-400 text-xs mb-4">Share your experience with Aastha Enterprises</p>
+
+      <form onsubmit="submitReview(event)" class="space-y-4">
+        <div>
+          <label class="block text-xs font-bold text-slate-400 uppercase mb-1">Your Name</label>
+          <input type="text" id="revName" required placeholder="e.g. Rahul Das" class="w-full bg-slate-900 text-white px-3.5 py-2.5 rounded-xl border border-slate-700 text-sm focus:outline-none" />
+        </div>
+
+        <div>
+          <label class="block text-xs font-bold text-slate-400 uppercase mb-1">Rating</label>
+          <select id="revRating" class="w-full bg-slate-900 text-white px-3.5 py-2.5 rounded-xl border border-slate-700 text-sm focus:outline-none">
+            <option value="5">⭐⭐⭐⭐⭐ (5/5 Stars)</option>
+            <option value="4">⭐⭐⭐⭐ (4/5 Stars)</option>
+            <option value="3">⭐⭐⭐ (3/5 Stars)</option>
+          </select>
+        </div>
+
+        <div>
+          <label class="block text-xs font-bold text-slate-400 uppercase mb-1">Your Feedback</label>
+          <textarea id="revComment" required rows="3" placeholder="Tell us about the property deal or visit..." class="w-full bg-slate-900 text-white px-3.5 py-2.5 rounded-xl border border-slate-700 text-sm focus:outline-none"></textarea>
+        </div>
+
+        <button type="submit" id="revSubmitBtn" class="w-full py-3 gold-gradient text-slate-950 font-black rounded-xl text-sm">
+          Publish Review Live 🌟
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- ================= MODAL: AUTHENTICATION ================= -->
+  <div id="authModal" class="hidden fixed inset-0 z-50 bg-slate-950/85 backdrop-blur-md flex items-center justify-center p-4">
+    <div class="glass-card rounded-3xl max-w-md w-full p-6 relative">
+      <button onclick="closeModal('authModal')" class="absolute top-5 right-5 text-slate-400 hover:text-white"><i class="fa-solid fa-xmark"></i></button>
+
+      <div class="flex p-1 bg-slate-900 rounded-xl mb-6 text-xs font-extrabold">
+        <button id="btnTabSignIn" onclick="setAuthTab('signin')" class="flex-1 py-2 rounded-lg bg-amber-500 text-slate-950">Sign In</button>
+        <button id="btnTabSignUp" onclick="setAuthTab('signup')" class="flex-1 py-2 rounded-lg text-slate-400">Sign Up</button>
+        <button id="btnTabAdmin" onclick="setAuthTab('admin')" class="flex-1 py-2 rounded-lg text-slate-400">Admin</button>
+      </div>
+
+      <div id="formSignIn">
+        <form onsubmit="handleUserSignIn(event)" class="space-y-4">
+          <input type="email" id="loginEmail" required placeholder="Email Address" class="w-full bg-slate-900 text-white px-3.5 py-2.5 rounded-xl border border-slate-700 text-sm focus:outline-none" />
+          <input type="password" id="loginPassword" required placeholder="Password" class="w-full bg-slate-900 text-white px-3.5 py-2.5 rounded-xl border border-slate-700 text-sm focus:outline-none" />
+          <button type="submit" class="w-full py-3 gold-gradient text-slate-950 font-black rounded-xl text-sm">Sign In</button>
+        </form>
+      </div>
+
+      <div id="formSignUp" class="hidden">
+        <form onsubmit="handleUserSignUp(event)" class="space-y-3">
+          <input type="text" id="regName" required placeholder="Full Name" class="w-full bg-slate-900 text-white px-3.5 py-2 rounded-xl border border-slate-700 text-sm focus:outline-none" />
+          <input type="email" id="regEmail" required placeholder="Email Address" class="w-full bg-slate-900 text-white px-3.5 py-2 rounded-xl border border-slate-700 text-sm focus:outline-none" />
+          <input type="tel" id="regPhone" required placeholder="Phone Number" class="w-full bg-slate-900 text-white px-3.5 py-2 rounded-xl border border-slate-700 text-sm focus:outline-none" />
+          <input type="password" id="regPassword" required placeholder="Password" class="w-full bg-slate-900 text-white px-3.5 py-2 rounded-xl border border-slate-700 text-sm focus:outline-none" />
+          <button type="submit" class="w-full py-3 bg-emerald-500 text-slate-950 font-black rounded-xl text-sm">Create Account</button>
+        </form>
+      </div>
+
+      <div id="formAdmin" class="hidden">
+        <form onsubmit="handleAdminAuth(event)" class="space-y-4">
+          <input type="email" id="adminEmail" required placeholder="SuperAdmin Email" class="w-full bg-slate-900 text-white px-3.5 py-2.5 rounded-xl border border-slate-700 text-sm focus:outline-none" />
+          <input type="password" id="adminPassword" required placeholder="Admin Password" class="w-full bg-slate-900 text-white px-3.5 py-2.5 rounded-xl border border-slate-700 text-sm focus:outline-none" />
+          <div id="adminError" class="hidden p-2 rounded-lg bg-red-500/20 text-red-400 text-xs font-bold">Invalid credentials!</div>
+          <button type="submit" class="w-full py-3 bg-red-600 text-white font-black rounded-xl text-sm">Unlock Admin Room</button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= MODAL: POST PROPERTY ================= -->
+  <div id="postModal" class="hidden fixed inset-0 z-50 bg-slate-950/85 backdrop-blur-md flex items-center justify-center p-4">
+    <div class="glass-card rounded-3xl max-w-xl w-full p-6 relative max-h-[90vh] overflow-y-auto custom-scroll">
+      <button onclick="closeModal('postModal')" class="absolute top-5 right-5 text-slate-400 hover:text-white"><i class="fa-solid fa-xmark"></i></button>
+
+      <h3 id="postModalTitle" class="text-2xl font-black mb-4">Post Property</h3>
+
+      <form id="postPropertyForm" onsubmit="submitNewListing(event)" class="space-y-4">
+        <input type="hidden" id="isOfficialListingFlag" value="false" />
+        
+        <input type="text" id="propTitle" required placeholder="Title (e.g. 3BHK Flat near Namghar)" class="w-full bg-slate-900 text-white px-3.5 py-2.5 rounded-xl border border-slate-700 text-sm focus:outline-none" />
+
+        <div class="grid grid-cols-2 gap-3">
+          <select id="propCategory" class="w-full bg-slate-900 text-white px-3 py-2 rounded-xl border border-slate-700 text-sm focus:outline-none">
+            <option value="Flat">Flat</option>
+            <option value="Commercial">Commercial</option>
+            <option value="Villa">Villa</option>
+            <option value="Plot">Plot</option>
+          </select>
+          <input type="text" id="propPrice" required placeholder="Price (₹)" class="w-full bg-slate-900 text-white px-3.5 py-2.5 rounded-xl border border-slate-700 text-sm focus:outline-none" />
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <input type="text" id="propCity" required placeholder="Locality / Area" class="w-full bg-slate-900 text-white px-3.5 py-2.5 rounded-xl border border-slate-700 text-sm focus:outline-none" />
+          <input type="text" id="propSpecs" placeholder="Specs (e.g. 3 Beds • 1500 sqft)" class="w-full bg-slate-900 text-white px-3.5 py-2.5 rounded-xl border border-slate-700 text-sm focus:outline-none" />
+        </div>
+
+        <div class="bg-slate-900 p-3.5 rounded-2xl border border-slate-800">
+          <label class="block text-xs font-bold text-amber-400 uppercase mb-1">Upload Photos (Max 4)</label>
+          <input type="file" id="propFileInput" accept="image/*" multiple onchange="handleMultipleImages(event)" class="w-full text-xs text-slate-400 file:mr-2 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-black file:bg-amber-500 file:text-slate-950 cursor-pointer" />
+          <div id="multiPreviewGrid" class="hidden grid grid-cols-4 gap-2 mt-2"></div>
+        </div>
+
+        <div>
+          <label class="block text-xs font-bold text-slate-300 uppercase mb-1">Owner Contact Phone (Visible ONLY to Admin)</label>
+          <input type="tel" id="propOwnerContact" required placeholder="e.g. 9876543210" class="w-full bg-slate-900 text-white px-3.5 py-2.5 rounded-xl border border-slate-700 text-sm focus:outline-none" />
+        </div>
+
+        <button type="submit" id="postBtnText" class="w-full py-3.5 gold-gradient text-slate-950 font-black rounded-xl text-sm">
+          Publish to Realtime Cloud 🚀
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- ================= MODAL: DETAILS POPUP ================= -->
+  <div id="detailsModal" class="hidden fixed inset-0 z-50 bg-slate-950/85 backdrop-blur-md flex items-center justify-center p-4">
+    <div class="glass-card rounded-3xl max-w-lg w-full p-6 relative max-h-[90vh] overflow-y-auto custom-scroll">
+      <button onclick="closeModal('detailsModal')" class="absolute top-5 right-5 text-slate-400 hover:text-white"><i class="fa-solid fa-xmark"></i></button>
+
+      <div class="rounded-2xl overflow-hidden h-48 mb-3 border border-slate-700">
+        <img id="detailImg" src="" class="w-full h-full object-cover" />
+      </div>
+
+      <div id="detailThumbnails" class="flex gap-2 overflow-x-auto pb-2 mb-3"></div>
+
+      <h3 id="detailTitle" class="text-lg font-black text-white"></h3>
+      <p id="detailPrice" class="text-amber-400 font-black text-base my-1"></p>
+      <p id="detailLoc" class="text-xs text-slate-400 mb-2"></p>
+      <p id="detailSpecs" class="text-xs text-slate-300 bg-slate-900 p-2.5 rounded-xl border border-slate-800 mb-4"></p>
+
+      <a id="detailWaBtn" href="#" target="_blank" class="w-full bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-black py-3 rounded-xl flex items-center justify-center space-x-2 text-xs">
+        <i class="fa-brands fa-whatsapp text-base"></i>
+        <span>Inquire on WhatsApp (Central Office)</span>
+      </a>
+    </div>
+  </div>
+
+  <!-- ================= FLOATING AI ASSISTANT WIDGET ================= -->
+  <div class="fixed bottom-6 right-6 z-50">
+    <button id="aiChatBtn" onclick="toggleAiChat()" class="gold-gradient hover:scale-105 text-slate-950 w-14 h-14 rounded-2xl shadow-2xl flex items-center justify-center text-2xl transition duration-300">
+      <i class="fa-solid fa-robot"></i>
+    </button>
+
+    <div id="aiChatWindow" class="hidden absolute bottom-16 right-0 w-80 sm:w-96 glass-card border border-slate-700 rounded-3xl shadow-2xl overflow-hidden flex flex-col h-[460px]">
+      <div class="bg-slate-950 p-4 border-b border-slate-800 flex items-center justify-between">
+        <div class="flex items-center space-x-3">
+          <div class="w-8 h-8 rounded-xl gold-gradient flex items-center justify-center text-slate-950 text-sm font-black">
+            <i class="fa-solid fa-robot"></i>
+          </div>
+          <div>
+            <h4 class="font-black text-white text-xs">Aastha AI Bot</h4>
+            <p class="text-[10px] text-emerald-400 font-bold flex items-center">
+              <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 inline-block mr-1"></span> Online
+            </p>
+          </div>
+        </div>
+        <button onclick="toggleAiChat()" class="text-slate-400 hover:text-white"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+
+      <div id="aiChatMessages" class="flex-grow p-4 overflow-y-auto space-y-3 text-xs custom-scroll">
+        <div class="bg-slate-800 p-3 rounded-2xl rounded-tl-none border border-slate-700 text-slate-200 leading-relaxed">
+          Hello! 👋 I am your <strong>Aastha Real Estate Assistant</strong>.<br/>
+          Ask me anything:
+          <div class="mt-2 space-y-1">
+            <span class="block cursor-pointer text-amber-400 hover:underline" onclick="sendQuickPrompt('Office address and phone number?')">• Office Address & Contact</span>
+            <span class="block cursor-pointer text-amber-400 hover:underline" onclick="sendQuickPrompt('What properties are available right now?')">• Available Properties</span>
+            <span class="block cursor-pointer text-amber-400 hover:underline" onclick="sendQuickPrompt('How do I list my flat or commercial shop?')">• How to List a Property</span>
+          </div>
+        </div>
+      </div>
+
+      <form onsubmit="handleAiChatSubmit(event)" class="p-3 bg-slate-950 border-t border-slate-800 flex items-center space-x-2">
+        <input type="text" id="aiInput" placeholder="Ask about properties, address..." class="flex-grow bg-slate-900 text-white px-3.5 py-2.5 rounded-xl border border-slate-700 text-xs focus:outline-none" />
+        <button type="submit" class="gold-gradient text-slate-950 p-2.5 rounded-xl font-bold">
+          <i class="fa-solid fa-paper-plane text-xs"></i>
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- FOOTER -->
+  <footer class="bg-slate-950 border-t border-slate-800 mt-auto py-8 text-slate-500 text-center text-xs">
+    <p class="text-slate-300 font-bold">Aastha Enterprises • Barnchal path, Madhuban namghar</p>
+    <p class="mt-1">Central Helpline: +91 6003523175</p>
+  </footer>
+
+  <!-- ================= JAVASCRIPT LOGIC ================= -->
+  <script>
+    const OFFICIAL_PHONE = "6003523175";
+    const SECRET_ADMIN = { email: "admin@aastha.com", password: "aastha123" };
+
+    // 🔥 YOUR REALTIME DATABASE CONFIGURATION DIRECTLY INTEGRATED
+    const firebaseConfig = {
+      apiKey: "AIzaSyDy_4dnLe78FJeIHPpJEvLn4P2sc7ewGyo",
+      authDomain: "aasthahousing-84685.firebaseapp.com",
+      databaseURL: "https://aasthahousing-84685-default-rtdb.firebaseio.com/",
+      projectId: "aasthahousing-84685",
+      storageBucket: "aasthahousing-84685.firebasestorage.app",
+      messagingSenderId: "321515846936",
+      appId: "1:321515846936:web:3fb53749162d6fc2fd326d"
+    };
+
+    let rtdb = null;
+    let properties = [];
+    let reviews = [];
+    let uploadedImagesArray = [];
+    let currentUser = JSON.parse(localStorage.getItem('aastha_active_user')) || null;
+
+    try {
+      firebase.initializeApp(firebaseConfig);
+      rtdb = firebase.database();
+    } catch(err) {
+      console.error("Firebase Init Error:", err);
+    }
+
+    // 📸 FAST COMPRESSOR (Photos under 30KB)
+    function compressImage(file) {
+      return new Promise((resolve) => {
+        const reader = new FileReader();
+        reader.readAsDataURL(file);
+        reader.onload = (e) => {
+          const img = new Image();
+          img.src = e.target.result;
+          img.onload = () => {
+            const canvas = document.createElement('canvas');
+            const maxWidth = 500;
+            let width = img.width;
+            let height = img.height;
+            if (width > maxWidth) {
+              height = Math.round((height * maxWidth) / width);
+              width = maxWidth;
+            }
+            canvas.width = width;
+            canvas.height = height;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(img, 0, 0, width, height);
+            resolve(canvas.toDataURL('image/jpeg', 0.5));
+          };
+        };
+      });
+    }
+
+    async function handleMultipleImages(event) {
+      const files = Array.from(event.target.files).slice(0, 4);
+      uploadedImagesArray = [];
+      const previewGrid = document.getElementById('multiPreviewGrid');
+      previewGrid.innerHTML = '<span class="text-xs text-amber-400 col-span-4">Compressing photos...</span>';
+      previewGrid.classList.remove('hidden');
+
+      for (const file of files) {
+        const base64 = await compressImage(file);
+        uploadedImagesArray.push(base64);
+      }
+
+      previewGrid.innerHTML = '';
+      uploadedImagesArray.forEach(img => {
+        previewGrid.innerHTML += `<div class="h-16 rounded-lg overflow-hidden border border-slate-700"><img src="${img}" class="w-full h-full object-cover" /></div>`;
+      });
+    }
+
+    // 🔥 REALTIME DATABASE LISTENER (NO RE-SEEDING BUG!)
+    function listenToRealtimeCloud() {
+      if (!rtdb) return;
+
+      // 1. Properties Listener
+      rtdb.ref('aastha_properties').on('value', (snapshot) => {
+        properties = [];
+        const data = snapshot.val();
+        if (data) {
+          Object.keys(data).forEach(key => {
+            properties.push({ id: key, ...data[key] });
+          });
+          properties.reverse(); // Newest first
+        }
+
+        document.getElementById('cloudStatusBar').className = "bg-emerald-500/20 text-emerald-300 text-xs py-1.5 px-4 text-center font-bold border-b border-emerald-500/30 flex items-center justify-center space-x-2";
+        document.getElementById('cloudStatusText').innerHTML = `✅ Realtime Cloud Connected • ${properties.length} Properties Active`;
+
+        renderGrid(properties);
+        renderAdmin();
+        renderDashboard();
+      }, (error) => {
+        console.error(error);
+        document.getElementById('cloudStatusBar').className = "bg-red-500/20 text-red-300 text-xs py-2 px-4 text-center font-bold border-b border-red-500/30 flex items-center justify-center space-x-2";
+        document.getElementById('cloudStatusText').innerHTML = `❌ Realtime DB Permission Denied! Check Rules tab.`;
+      });
+
+      // 2. Reviews Listener
+      rtdb.ref('aastha_reviews').on('value', (snapshot) => {
+        reviews = [];
+        const data = snapshot.val();
+        if (data) {
+          Object.keys(data).forEach(key => {
+            reviews.push({ id: key, ...data[key] });
+          });
+          reviews.reverse();
+        }
+        renderReviews();
+      });
+    }
+
+    // Render Grid
+    function renderGrid(list) {
+      const grid = document.getElementById('propertyGrid');
+      grid.innerHTML = '';
+
+      if (list.length === 0) {
+        grid.innerHTML = `<div class="col-span-3 text-center py-16 text-slate-500">No properties available in database right now. Click "+ List Property" to add!</div>`;
+        return;
+      }
+
+      list.forEach(p => {
+        const img = (p.images && p.images.length > 0) ? p.images[0] : "https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?auto=format&fit=crop&w=800&q=80";
+        const count = p.images ? p.images.length : 1;
+
+        const waText = encodeURIComponent(`Hello Aastha Enterprises! I am inquiring about property:\n\n🏡 Title: ${p.title}\n📍 Locality: ${p.city}\n💰 Price: ${p.price}\n🔑 Property ID: ${p.id}\n\nPlease share further details & visit timing.`);
+        const waLink = `https://wa.me/91${OFFICIAL_PHONE}?text=${waText}`;
+
+        grid.innerHTML += `
+          <div class="glass-card rounded-3xl overflow-hidden hover:border-amber-500/60 transition flex flex-col">
+            <div class="relative h-56">
+              <img src="${img}" class="w-full h-full object-cover" />
+              <span class="absolute top-3 left-3 bg-slate-950/90 text-amber-400 text-xs font-black px-3 py-1 rounded-full uppercase">${p.category}</span>
+              ${count > 1 ? `<span class="absolute top-3 right-3 bg-slate-950/80 text-white text-xs font-bold px-2 py-0.5 rounded-lg"><i class="fa-solid fa-camera mr-1"></i>${count}</span>` : ''}
+              <span class="absolute bottom-3 right-3 bg-slate-950/95 text-amber-400 font-black text-sm px-3 py-1 rounded-xl">${p.price}</span>
+            </div>
+            <div class="p-5 flex-grow flex flex-col justify-between">
+              <div>
+                <p class="text-xs text-amber-400 font-bold mb-1"><i class="fa-solid fa-location-dot mr-1"></i> ${p.city}</p>
+                <h3 class="text-base font-bold text-white mb-1 leading-snug">${p.title}</h3>
+                <p class="text-slate-400 text-xs mb-4">${p.specs || 'Verified'}</p>
+              </div>
+              <div class="space-y-2 pt-3 border-t border-slate-800">
+                <button onclick="openDetails('${p.id}')" class="w-full py-2 bg-slate-800 hover:bg-slate-700 text-white rounded-xl text-xs font-bold">
+                  View Photos & Details
+                </button>
+                <a href="${waLink}" target="_blank" class="w-full bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-black py-2.5 rounded-xl flex items-center justify-center space-x-1.5 text-xs">
+                  <i class="fa-brands fa-whatsapp text-sm"></i>
+                  <span>Inquire on WhatsApp (Instant)</span>
+                </a>
+              </div>
+            </div>
+          </div>
+        `;
+      });
+    }
+
+    // Details Modal
+    function openDetails(id) {
+      const p = properties.find(x => x.id === id);
+      if (!p) return;
+
+      const imgs = (p.images && p.images.length > 0) ? p.images : ["https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?auto=format&fit=crop&w=800&q=80"];
+      document.getElementById('detailImg').src = imgs[0];
+      document.getElementById('detailTitle').innerText = p.title;
+      document.getElementById('detailPrice').innerText = p.price;
+      document.getElementById('detailLoc').innerText = `Location: ${p.city}`;
+      document.getElementById('detailSpecs').innerText = `${p.specs} • ID: ${p.id}`;
+
+      const thumbBox = document.getElementById('detailThumbnails');
+      thumbBox.innerHTML = '';
+      imgs.forEach(i => {
+        thumbBox.innerHTML += `<img src="${i}" onclick="document.getElementById('detailImg').src='${i}'" class="w-12 h-12 object-cover rounded-xl cursor-pointer border border-slate-700 shrink-0" />`;
+      });
+
+      const waText = encodeURIComponent(`Hello Aastha Enterprises! I am viewing ${p.title} (${p.id}). Please schedule a visit.`);
+      document.getElementById('detailWaBtn').href = `https://wa.me/91${OFFICIAL_PHONE}?text=${waText}`;
+      openModal('detailsModal');
+    }
+
+    // Submit New Property
+    function submitNewListing(e) {
+      e.preventDefault();
+      const isOfficial = document.getElementById('isOfficialListingFlag').value === "true";
+      const fallback = ["https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?auto=format&fit=crop&w=800&q=80"];
+      const finalImages = uploadedImagesArray.length > 0 ? uploadedImagesArray : fallback;
+
+      const btn = document.getElementById('postBtnText');
+      btn.innerText = "Publishing to Cloud...";
+
+      const newListing = {
+        title: document.getElementById('propTitle').value,
+        category: document.getElementById('propCategory').value,
+        price: document.getElementById('propPrice').value,
+        city: document.getElementById('propCity').value,
+        specs: document.getElementById('propSpecs').value || "Verified Configuration",
+        images: finalImages,
+        ownerPhone: document.getElementById('propOwnerContact').value.trim(),
+        owner: isOfficial ? "Aastha Official" : (currentUser ? currentUser.name : "Property Owner"),
+        ownerEmail: isOfficial ? "admin@aastha.com" : (currentUser ? currentUser.email : "user@aastha.com"),
+        createdAt: Date.now()
+      };
+
+      if (!rtdb) return alert("Firebase Realtime DB not initialized!");
+
+      rtdb.ref('aastha_properties').push(newListing)
+        .then(() => {
+          btn.innerText = "Publish to Realtime Cloud 🚀";
+          alert("🎉 Property successfully published to Realtime Database!");
+          closeModal('postModal');
+          document.getElementById('postPropertyForm').reset();
+          uploadedImagesArray = [];
+          document.getElementById('multiPreviewGrid').classList.add('hidden');
+        })
+        .catch(err => {
+          btn.innerText = "Publish to Realtime Cloud 🚀";
+          alert("Upload Error: " + err.message);
+        });
+    }
+
+    // 🛡️ SUPERADMIN TABLE & PERMANENT DELETE FIX
+    function renderAdmin() {
+      const tbody = document.getElementById('adminTableBody');
+      tbody.innerHTML = '';
+      document.getElementById('adminListingCount').innerText = properties.length;
+
+      properties.forEach(p => {
+        tbody.innerHTML += `
+          <tr class="hover:bg-slate-800/40">
+            <td class="p-4 font-bold text-white">${p.title}</td>
+            <td class="p-4">${p.category}</td>
+            <td class="p-4 text-slate-300">${p.city}</td>
+            <td class="p-4 text-amber-400 font-bold">${p.price}</td>
+            <td class="p-4 text-slate-300">${p.owner}</td>
+            <td class="p-4 bg-amber-500/10 font-mono font-bold text-amber-300">
+              <a href="tel:${p.ownerPhone}" class="hover:underline flex items-center">
+                <i class="fa-solid fa-phone mr-1.5 text-emerald-400"></i> ${p.ownerPhone || 'N/A'}
+              </a>
+            </td>
+            <td class="p-4 text-center">
+              <button onclick="permanentDeleteListing('${p.id}')" class="px-3 py-1.5 bg-red-500/20 hover:bg-red-500/30 text-red-400 rounded-lg font-bold border border-red-500/30">
+                <i class="fa-solid fa-trash mr-1"></i> Delete
+              </button>
+            </td>
+          </tr>
+        `;
+      });
+    }
+
+    // 🔥 PERMANENT DELETE (NO RE-CREATING OR COMING BACK!)
+    function permanentDeleteListing(id) {
+      if (!confirm("Are you sure you want to permanently delete this listing from Cloud?")) return;
+      
+      if (!rtdb) return alert("Firebase not initialized!");
+
+      rtdb.ref('aastha_properties/' + id).remove()
+        .then(() => {
+          alert("✅ Listing permanently deleted from database.");
+        })
+        .catch(err => {
+          alert("Delete Error: " + err.message);
+        });
+    }
+
+    function renderDashboard() {
+      const c = document.getElementById('userListingsGrid');
+      c.innerHTML = '';
+      const my = properties.filter(p => p.ownerEmail === currentUser?.email || p.owner === currentUser?.name);
+      if (my.length === 0) {
+        c.innerHTML = `<div class="col-span-3 py-16 text-center text-slate-500">You haven't listed any property yet.</div>`;
+        return;
+      }
+      my.forEach(p => {
+        c.innerHTML += `
+          <div class="glass-card p-5 rounded-2xl flex flex-col justify-between">
+            <div>
+              <span class="text-xs font-bold text-amber-400 uppercase">${p.category}</span>
+              <h4 class="font-bold text-white text-base mt-1">${p.title}</h4>
+              <p class="text-sm font-black text-amber-400 mt-1">${p.price}</p>
+            </div>
+            <div class="mt-4 pt-4 border-t border-slate-800 flex justify-end">
+              <button onclick="permanentDeleteListing('${p.id}')" class="text-xs font-bold text-red-400">Delete Ad</button>
+            </div>
+          </div>
+        `;
+      });
+    }
+
+    // 🌟 REVIEW SYSTEM
+    function submitReview(e) {
+      e.preventDefault();
+      const name = document.getElementById('revName').value.trim();
+      const rating = parseInt(document.getElementById('revRating').value);
+      const comment = document.getElementById('revComment').value.trim();
+
+      const newReview = { name, rating, comment, date: Date.now() };
+
+      if (!rtdb) return;
+
+      rtdb.ref('aastha_reviews').push(newReview)
+        .then(() => {
+          alert("🎉 Review published live on Aastha Enterprises!");
+          closeModal('reviewModal');
+          document.getElementById('revName').value = '';
+          document.getElementById('revComment').value = '';
+        })
+        .catch(err => alert("Error: " + err.message));
+    }
+
+    function renderReviews() {
+      const box = document.getElementById('reviewsContainer');
+      box.innerHTML = '';
+
+      const defaultReviews = [
+        { name: "Ankur Kalita", rating: 5, comment: "Found a beautiful 3BHK flat in Madhuban through Aastha Enterprises. Zero broker tension and clear papers!" },
+        { name: "Rajesh Sharma", rating: 5, comment: "Rented commercial showroom space near Barnchal Path. Highly professional paperwork and support." }
+      ];
+
+      const listToRender = reviews.length > 0 ? reviews : defaultReviews;
+
+      listToRender.forEach(r => {
+        let stars = '';
+        for (let i = 0; i < r.rating; i++) stars += '<i class="fa-solid fa-star"></i>';
+
+        box.innerHTML += `
+          <div class="glass-card p-6 rounded-3xl border border-slate-800 flex flex-col justify-between">
+            <div>
+              <div class="text-amber-400 text-xs mb-3 space-x-1">${stars}</div>
+              <p class="text-slate-300 text-xs leading-relaxed italic">"${r.comment}"</p>
+            </div>
+            <div class="mt-6 flex items-center space-x-3 pt-4 border-t border-slate-800/80">
+              <div class="w-8 h-8 rounded-full gold-gradient text-slate-950 font-black flex items-center justify-center text-xs">
+                ${r.name.slice(0, 2).toUpperCase()}
+              </div>
+              <div>
+                <h5 class="text-white font-bold text-xs">${r.name}</h5>
+                <p class="text-[10px] text-slate-500">Verified Client</p>
+              </div>
+            </div>
+          </div>
+        `;
+      });
+    }
+
+    // 🤖 AI CHATBOT LOGIC
+    function toggleAiChat() { document.getElementById('aiChatWindow').classList.toggle('hidden'); }
+    function sendQuickPrompt(t) { document.getElementById('aiInput').value = t; handleAiChatSubmit(new Event('submit')); }
+
+    function handleAiChatSubmit(e) {
+      e.preventDefault();
+      const input = document.getElementById('aiInput');
+      const text = input.value.trim();
+      if (!text) return;
+
+      const chatBox = document.getElementById('aiChatMessages');
+      chatBox.innerHTML += `
+        <div class="flex justify-end">
+          <div class="bg-amber-500 text-slate-950 font-bold p-3 rounded-2xl rounded-tr-none max-w-[85%]">${text}</div>
+        </div>
+      `;
+      input.value = '';
+      chatBox.scrollTop = chatBox.scrollHeight;
+
+      setTimeout(() => {
+        const q = text.toLowerCase();
+        let reply = `Thank you for reaching out to <strong>Aastha Enterprises</strong>! You can contact our central management directly on WhatsApp or Call at <strong>+91 ${OFFICIAL_PHONE}</strong>.`;
+
+        if (q.includes('address') || q.includes('location') || q.includes('kahan')) {
+          reply = `📍 <strong>Main Office:</strong><br/>Barnchal path, Madhuban namghar.<br/>Open Monday to Saturday 9:00 AM - 8:00 PM!`;
+        } else if (q.includes('phone') || q.includes('number') || q.includes('contact') || q.includes('call')) {
+          reply = `📞 Direct Helpline & WhatsApp: <strong>+91 ${OFFICIAL_PHONE}</strong>.`;
+        } else if (q.includes('flat') || q.includes('3bhk') || q.includes('available') || q.includes('property')) {
+          reply = `🏢 We have verified flats and commercial hubs available right now! You can view them in the catalog above or tap <strong>"Inquire on WhatsApp"</strong> for instant details.`;
+        } else if (q.includes('list') || q.includes('post') || q.includes('sell') || q.includes('rent')) {
+          reply = `📝 You can list your flat or commercial shop for <strong>FREE</strong>! Just click the <strong>"+ List Property"</strong> button in the top navbar.`;
+        }
+
+        chatBox.innerHTML += `
+          <div class="flex justify-start">
+            <div class="bg-slate-800 border border-slate-700 text-slate-200 p-3 rounded-2xl rounded-tl-none max-w-[85%] leading-relaxed">${reply}</div>
+          </div>
+        `;
+        chatBox.scrollTop = chatBox.scrollHeight;
+      }, 500);
+    }
+
+    // Filter Category
+    function filterCategory(cat) {
+      document.querySelectorAll('.cat-pill').forEach(b => {
+        b.className = "cat-pill px-4 py-2 rounded-xl text-xs font-bold bg-slate-800 text-slate-300";
+      });
+      event?.target?.classList?.remove('bg-slate-800', 'text-slate-300');
+      event?.target?.classList?.add('bg-amber-500', 'text-slate-950');
+
+      if (cat === 'All') renderGrid(properties);
+      else renderGrid(properties.filter(x => x.category === cat));
+    }
+
+    // Auth Handlers
+    function handleAdminAuth(e) {
+      e.preventDefault();
+      const m = document.getElementById('adminEmail').value.trim();
+      const p = document.getElementById('adminPassword').value.trim();
+      if (m === SECRET_ADMIN.email && p === SECRET_ADMIN.password) {
+        currentUser = { name: "SuperAdmin", email: m, role: "admin" };
+        localStorage.setItem('aastha_active_user', JSON.stringify(currentUser));
+        closeModal('authModal');
+        syncNav();
+        showView('admin');
+        alert("🛡️ SuperAdmin Access Granted!");
+      } else {
+        document.getElementById('adminError').classList.remove('hidden');
+      }
+    }
+
+    function handleUserSignIn(e) {
+      e.preventDefault();
+      currentUser = { name: "Client", email: document.getElementById('loginEmail').value, role: "user" };
+      localStorage.setItem('aastha_active_user', JSON.stringify(currentUser));
+      closeModal('authModal');
+      syncNav();
+    }
+
+    function handleUserSignUp(e) {
+      e.preventDefault();
+      currentUser = { name: document.getElementById('regName').value, email: document.getElementById('regEmail').value, role: "user" };
+      localStorage.setItem('aastha_active_user', JSON.stringify(currentUser));
+      closeModal('authModal');
+      syncNav();
+    }
+
+    function logout() {
+      currentUser = null;
+      localStorage.removeItem('aastha_active_user');
+      syncNav();
+      showView('home');
+    }
+
+    function syncNav() {
+      if (currentUser) {
+        document.getElementById('navGuest').classList.add('hidden');
+        document.getElementById('navUser').classList.remove('hidden');
+        document.getElementById('navUserName').innerText = currentUser.name;
+        if (currentUser.role === 'admin') document.getElementById('adminBadge').classList.remove('hidden');
+      } else {
+        document.getElementById('navGuest').classList.remove('hidden');
+        document.getElementById('navUser').classList.add('hidden');
+        document.getElementById('adminBadge').classList.add('hidden');
+      }
+    }
+
+    function openModal(id) { document.getElementById(id).classList.remove('hidden'); }
+    function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
+
+    function openPostModal(isOfficial) {
+      document.getElementById('isOfficialListingFlag').value = isOfficial ? "true" : "false";
+      document.getElementById('postModalTitle').innerText = isOfficial ? "👑 Post Official Aastha Listing" : "Post Property";
+      document.getElementById('multiPreviewGrid').innerHTML = '';
+      document.getElementById('multiPreviewGrid').classList.add('hidden');
+      uploadedImagesArray = [];
+      openModal('postModal');
+    }
+
+    function setAuthTab(tab) {
+      document.getElementById('formSignIn').classList.toggle('hidden', tab !== 'signin');
+      document.getElementById('formSignUp').classList.toggle('hidden', tab !== 'signup');
+      document.getElementById('formAdmin').classList.toggle('hidden', tab !== 'admin');
+    }
+
+    function showView(view) {
+      document.getElementById('homeView').classList.toggle('hidden', view !== 'home');
+      document.getElementById('dashboardView').classList.toggle('hidden', view !== 'dashboard');
+      document.getElementById('adminView').classList.toggle('hidden', view !== 'admin');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    // Init App
+    syncNav();
+    listenToRealtimeCloud();
+  </script>
+</body>
+</html>
